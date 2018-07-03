@@ -18,8 +18,10 @@
 @import 'partials/highlight';
 @import 'partials/home';
 @import 'partials/layout';
+@import 'partials/section';
 @import 'partials/modal';
 @import 'partials/nav-main';
+@import 'partials/nav-main-dropdown';
 @import 'partials/page-info';
 @import 'partials/search';
 @import 'partials/quick-search';
@@ -35,9 +37,7 @@
 @import 'partials/progress-bar';
 @import 'partials/tooltip';
 @import 'partials/popover';
-
-
-
+@import 'partials/ee-only';
 
 .hide {
   display: none;

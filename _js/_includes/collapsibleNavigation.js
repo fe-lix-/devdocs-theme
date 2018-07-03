@@ -24,7 +24,7 @@
 		function Plugin ( element, options ) {
 			this.element = element;
 
-			this.settings = $.extend( {}, defaults, options );
+			this.options = $.extend( {}, defaults, options );
 			this._defaults = defaults;
 			this._name = pluginName;
 			this.init();
@@ -32,15 +32,19 @@
 
 		// Avoid Plugin.prototype conflicts
 		$.extend( Plugin.prototype, {
+
 			init: function() {
-        this.items = $( this.element ).find( this.settings.itemSelector );
+        this.items = $( this.element ).find( this.options.itemSelector );
         this.initMenuItems( this.items );
+				if ( this.items.hasClass(this.options.hasChildrenClass) ) {
+					this.addExpandAllToggle();
+				}
 			},
 
       initMenuItems: function( items ) {
 
         var plugin = this;
-        var settings = plugin.settings;
+        var options = plugin.options;
         var n = 0;
 
         items.each ( function () {
@@ -48,11 +52,11 @@
           var item = $(this);
           item.attr('role', 'treeitem');
 
-          var submenu = item.find( settings.submenuSelector );
+          var submenu = item.find( options.submenuSelector );
 
           // If this item is active, traverse the tree up and open each parent
-          if ( item.hasClass ( settings.itemActiveClass ) ) {
-            var parents = item.parents( settings.itemSelector );
+          if ( item.hasClass ( options.itemActiveClass ) ) {
+            var parents = item.parents( options.itemSelector );
             plugin.openSubmenu( item, undefined, 0 );
             parents.each( function () {
               plugin.openSubmenu( $(this), undefined, 0 );
@@ -69,8 +73,9 @@
 
           // check if item is clickable, if not, make it
           if ( item.find('> a').length === 0 ) {
+
             item
-              .addClass(settings.itemToggleClass)
+              .addClass(options.itemToggleClass)
               .find('> span')
               .on('click',
                 { item: item,
@@ -87,16 +92,15 @@
             n++;
             var submenuId = 'collapsible-menu-' + n;
             var toggle = $('<button />')
-              .addClass( settings.toggleClass)
-              .attr('aria-controls', submenuId);
+              .addClass( options.toggleClass)
+              .attr('aria-controls', submenuId).
+							insertBefore( $( submenu ) );
 
             // Assign attributes
             $( submenu ).attr('id', submenuId)
               .attr('role', 'group');
 
-            $( item )
-                .addClass( settings.hasChildrenClass )
-                .prepend( toggle );
+            $( item ).addClass( options.hasChildrenClass );
 
               //Assign events
             toggle.on('click',
@@ -132,16 +136,16 @@
 
       openSubmenu: function ( item, submenu, speed ) {
 
-        item.removeClass( this.settings.closedClass ).
-          addClass(this.settings.openClass).
+        item.removeClass( this.options.closedClass ).
+          addClass(this.options.openClass).
           attr('aria-expanded', 'true');
 
         if( typeof submenu === "undefined" ) {
-          submenu = item.find( this.settings.submenuSelector );
+          submenu = item.find( this.options.submenuSelector );
         }
 
         if (typeof speed === "undefined" ) {
-          speed = this.settings.speed;
+          speed = this.options.speed;
         }
 
         submenu.slideDown( speed );
@@ -150,22 +154,56 @@
 
       closeSubmenu: function ( item, submenu, speed ) {
 
-        item.removeClass( this.settings.openClass ).
-          addClass(this.settings.closedClass).
+        item.removeClass( this.options.openClass ).
+          addClass(this.options.closedClass).
           attr('aria-expanded', 'false');
 
         if( typeof submenu === "undefined" ) {
-          submenu = item.find( this.settings.submenuSelector );
+          submenu = item.find( this.options.submenuSelector );
         }
 
         if (typeof speed === "undefined" ) {
-          speed = this.settings.speed;
+          speed = this.options.speed;
         }
 
         submenu.slideUp( speed );
-      }
+      },
 
-		} );
+
+			addExpandAllToggle: function () {
+				this.expandAllToggle = $('<button class="expand-all">Expand</button>');
+				this.expanded = false;
+				this.expandAllToggle.on('click',
+					{
+						plugin: this
+					},
+					this.handleExpandAllClick );
+
+				$(this.element).prepend( this.expandAllToggle );
+			},
+
+			handleExpandAllClick: function (event) {
+				var plugin = event.data.plugin;
+
+				if ( plugin.expanded ) {
+					plugin.expandAllToggle.text('Expand');
+					plugin.items.each( function () {
+						var $item = $(this);
+						plugin.closeSubmenu($item, undefined, 0);
+					})
+				} else {
+					plugin.expandAllToggle.text('Collapse');
+					plugin.items.each( function () {
+						var $item = $(this);
+						plugin.openSubmenu($item, undefined, 0);
+					})
+				}
+
+				plugin.expanded = !plugin.expanded;
+
+			},
+
+		});
 
 
 		// A really lightweight plugin wrapper around the constructor,
